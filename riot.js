@@ -1,4 +1,4 @@
-/* Riot v10.1.1, @license MIT */
+/* Riot v10.1.2, @license MIT */
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -201,6 +201,21 @@
    */
   const insertBefore = (newNode, refNode) =>
     refNode?.parentNode?.insertBefore(newNode, refNode);
+
+  /**
+   * Move a node into its new position. Use the moveBefore method if it's available
+   * @param {HTMLElement} existingNode - node to move
+   * @param {HTMLElement} refNode - ref child
+   * @returns {undefined}
+   */
+  const moveBefore = ((hasMoveBefore) => (existingNode, refNode) =>
+    hasMoveBefore
+      ? refNode?.parentNode?.moveBefore(existingNode, refNode)
+      : insertBefore(existingNode, refNode))(
+    // Rely on the new moveBefore method to move nodes if it's available https://developer.mozilla.org/en-US/docs/Web/API/Element/moveBefore
+    // cache the value of the check into a boolean variable
+    typeof Element !== 'undefined' && Element.prototype.moveBefore,
+  );
 
   /**
    * Replace a node
@@ -500,8 +515,8 @@
         // [1, 2, 3, 4, 5]
         // [1, 2, 3, 5, 6, 4]
         const node = get(a[--aEnd], -1).nextSibling;
-        insertBefore(get(b[bStart++], 1), get(a[aStart++], -1).nextSibling);
-        insertBefore(get(b[--bEnd], 1), node);
+        moveBefore(get(b[bStart++], 1), get(a[aStart++], -1).nextSibling);
+        moveBefore(get(b[--bEnd], 1), node);
         // mark the future index as identical (yeah, it's dirty, but cheap 👍)
         // The main reason to do this, is that when a[aEnd] will be reached,
         // the loop will likely be on the fast path, as identical to b[bEnd].
@@ -545,7 +560,7 @@
             // will be processed at zero cost
             if (sequence > index - bStart) {
               const node = get(a[aStart], 0);
-              while (bStart < index) insertBefore(get(b[bStart++], 1), node);
+              while (bStart < index) moveBefore(get(b[bStart++], 1), node);
             }
             // if the effort wasn't good enough, fallback to a replace,
             // moving both source and target indexes forward, hoping that some
@@ -2576,7 +2591,7 @@
   const withTypes = (component) => component;
 
   /** @type {string} current riot version */
-  const version = 'v10.1.1';
+  const version = 'v10.1.2';
 
   // expose some internal stuff that might be used from external tools
   const __ = {
